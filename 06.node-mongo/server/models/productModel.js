@@ -25,7 +25,13 @@ const productSchema = new mongoose.Schema({
         type : mongoose.Schema.Types.ObjectId,
         ref : 'Category',
         required : [true, 'Product category is required']
+    },
+    images: {
+        type : [String],
+        default : []
     }
 },{timestamps : true , versionKey : false});
   
 module.exports = mongoose.model('Product', productSchema);
+
+
