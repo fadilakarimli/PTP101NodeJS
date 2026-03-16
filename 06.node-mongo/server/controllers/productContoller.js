@@ -1,6 +1,5 @@
 const Product = require("../models/productModel")
-const fs = require("fs");
-const path = require("path");
+const { uploadImageBuffer, deleteImageByUrl } = require("../config/cloudinary");
 
 exports.getAllProducts = async (req, res) => {
   try {
@@ -53,8 +52,19 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ message: "Name, price and category required" })
     }
 
-    // Handle uploaded images
-    const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : []
+    // Upload incoming image buffers to Cloudinary and keep only hosted URLs.
+    const uploadedImages = req.files
+      ? await Promise.all(
+        req.files.map((file) =>
+          uploadImageBuffer(file.buffer, {
+            folder: "ptp101/products",
+            resource_type: "image"
+          })
+        )
+      )
+      : []
+
+    const images = uploadedImages.map((image) => image.secure_url)
 
     const product = new Product({
       name,
@@ -83,18 +93,24 @@ exports.updateProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" })
     }
 
-    // Delete old images if new ones are provided
+    // Replace old images when new files are uploaded.
     if (req.files && req.files.length > 0) {
-      // Delete old image files from disk
-      product.images.forEach(image => {
-        const filePath = path.join(__dirname, "../", image);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      });
+      await Promise.all(
+        (product.images || []).map((imageUrl) =>
+          deleteImageByUrl(imageUrl).catch(() => null)
+        )
+      )
 
-      // Add new images
-      const newImages = req.files.map(file => `/uploads/${file.filename}`)
+      const uploadedImages = await Promise.all(
+        req.files.map((file) =>
+          uploadImageBuffer(file.buffer, {
+            folder: "ptp/products",
+            resource_type: "image"
+          })
+        )
+      )
+
+      const newImages = uploadedImages.map((image) => image.secure_url)
       req.body.images = newImages
     }
 
@@ -117,13 +133,11 @@ exports.deleteProduct = async (req, res) => {
     const product = await Product.findById(req.params.id)
 
     if (product) {
-      // Delete image files from disk
-      product.images.forEach(image => {
-        const filePath = path.join(__dirname, "../", image);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      });
+      await Promise.all(
+        (product.images || []).map((imageUrl) =>
+          deleteImageByUrl(imageUrl).catch(() => null)
+        )
+      )
     }
 
     await Product.findByIdAndDelete(req.params.id)

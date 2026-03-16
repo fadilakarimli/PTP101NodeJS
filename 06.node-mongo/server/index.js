@@ -1,5 +1,6 @@
 const express = require('express')
 const path = require('path')
+const cors = require('cors')
 const connectDB = require('./config')
 const loggerMiddleware = require("./middlewares/loggerMiddleware")
 const categoryRoute = require('./routes/categoryRoute')
@@ -12,6 +13,16 @@ const PORT = process.env.PORT || 4000
 app.use(loggerMiddleware)
 
 // Middlewares
+app.use(
+    cors({
+        origin: [
+            'http://localhost:5173',
+            'http://localhost:8080'
+        ],
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization']
+    })
+)
 app.use(express.json())
 
 // Serve static files for uploads
