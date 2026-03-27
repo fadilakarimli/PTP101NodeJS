@@ -5,6 +5,8 @@ const connectDB = require('./config')
 const loggerMiddleware = require("./middlewares/loggerMiddleware")
 const categoryRoute = require('./routes/categoryRoute')
 const productRoute = require('./routes/productRoute')
+const userRoute = require('./routes/userRoute')
+const authRoute = require('./routes/authRoute')
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -31,6 +33,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 // Routes
 app.use('/api/categories', categoryRoute)
 app.use('/api/products', productRoute)
+app.use('/api/users', userRoute) // user route
+app.use('/api/auth', authRoute) // auth route
 
 // Connect to DB and start server
 connectDB().then(() => {
